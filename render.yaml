@@ -1,0 +1,28 @@
+# Render Blueprint for the Document Q&A API. In Render: New -> Blueprint -> select this repository.
+#
+# Render allows one free Postgres database per workspace, so this service shares the
+# `portfolio-db` database created by the expense-tracker-api Blueprint, in its own "docqa" schema.
+# When Render asks for DATABASE_URL, paste portfolio-db's *Internal Database URL*
+# (Render dashboard -> portfolio-db -> Connect -> Internal).
+#
+# Runs in offline mode (hash embeddings + extractive answers). To use a real LLM, set
+# LLM_PROVIDER=openai, LLM_API_KEY, LLM_BASE_URL and LLM_MODEL in the service's Environment settings.
+services:
+  - type: web
+    name: document-qa-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_SCHEMA
+        value: docqa                 # this app's tables live in the "docqa" schema
+      - key: DATABASE_URL
+        sync: false                  # Render asks for it when you create the Blueprint
+      - key: LLM_PROVIDER
+        value: extractive
